@@ -14,21 +14,21 @@ public:
 	}
 
 	typedef Iter<T> Iter;
-	Vec(Alloc& alloc = Alloc())
+	Vec(const Alloc& alloc = Alloc())
 	{
 		this->alloc = alloc;
 	}
 
-	Vec(size_t size, Alloc& alloc = Alloc())
+	Vec(size_t size, const Alloc& alloc = Alloc())
 	{
 		this->alloc = alloc;
-		Construct(size, T());
+		Create(size, T());
 	}
 
-	Vec(size_t size, const T& val, Alloc& alloc = Alloc()) //wtf why int???
+	Vec(size_t size, const T& val, const Alloc& alloc = Alloc())
 	{
 		this->alloc = alloc;
-		Construct(size, val);
+		Create(size, val);
 	}
 
 	Vec(const Vec& src)
@@ -39,17 +39,17 @@ public:
 			push_back(src[i]);
 	}
 
-	//Vec(std::initializer_list<T> il, Alloc& alloc = Alloc())
-	//{
-	//
-	//}
-
-	/*template<typename It>
+	Vec(std::initializer_list<T> il, Alloc& alloc = Alloc())
+	{
+		*this = Vec(il.begin(), il.end());
+	}
+	
+	template<typename It>
 	Vec(It first, It last, Alloc& alloc = Alloc())
 	{
-		//for (; first != last; ++first)
-		//	push_back(*first);
-	};*/
+		this->alloc = alloc;
+		Construct(val<is_iter<It>::value>(), first, last);
+	}
 
 	Vec<T>& operator=(const Vec<T>& src)
 	{	
@@ -108,7 +108,7 @@ public:
 	void reserve(size_t size)
 	{
 		if (size > capacity())
-			Reallocate(size); //??????????????
+			Reallocate(size);
 	}
 
 	bool empty() const
@@ -156,12 +156,12 @@ public:
 		return *(last - 1);
 	}
 
-	T* data() /*noexept ?*/
+	T* data()
 	{
 		return first;
 	}
 
-	const T* data() const /*noexept ?*/
+	const T* data() const
 	{
 		return first;
 	}
@@ -172,10 +172,30 @@ public:
 			if (size() == 0)
 				Allocate(1);
 			else
-				Reallocate(2 * size()); //tyt gl91nyt'
+				Reallocate(2 * size());
 
 		alloc.construct(last, val);
 		last++;
+	}
+
+	template <class It>
+	void assign(It first, It last)
+	{
+		clear();
+		shrink_to_fit(); // nado li?
+		Construct(val<is_iter<It>::value>(), first, last);
+	}
+
+	void assign(size_t size, const T& val)
+	{
+		clear();
+		shrink_to_fit(); // nado li?
+		Create(size, T());
+	}
+
+	void assign(std::initializer_list<T> il)
+	{
+		assign(il.begin(), il.end());
 	}
 
 	void push_back(T&& val)
@@ -184,7 +204,7 @@ public:
 			if (size() == 0)
 				Allocate(1);
 			else
-				Reallocate(2 * size()); //tyt gl91nyt'
+				Reallocate(2 * size());
 
 		alloc.construct(last, val);
 		last++;
@@ -192,13 +212,8 @@ public:
 
 	void pop_back()
 	{
-		//if (empty())
-		//	_DEBUG_ERROR("vector empty before pop");
-		//else
-		//{	
 		alloc.destroy(last - 1);
 		last--;
-		//}
 	}
 
 	Iter insert(const Iter position, const T& val)
@@ -207,37 +222,23 @@ public:
 		push_back(val);
 		for (Iter it = end() - 1; it != begin() + range; it--)
 			SwapElement(it, it - 1);
-		return begin() + range; //nepravilmno
+		return begin() + range; 
 	}
 
-	Iter insert(const Iter position, size_t n, const T& val)
+	Iter insert(const Iter position, size_t n, const T& va)
 	{
-		ptrdiff_t rrange = end() - position;
-		ptrdiff_t lrange = position - begin() - 1;
-		if (size() + n > capacity())
-		{
-			size_t tsize = size();
-			while (tsize < size() + n)
-				tsize *= 2;
-			Reallocate(tsize);
-		}
-		resize(size() + n);
+		return Insert(val<false>(), position, n, va);
+	}
 
-		Iter it = end();
-		for (int i = 0; i <= rrange; i++)
-		{
-			//mojet destructor
-			alloc.destroy(it.Pointer());
-			alloc.construct(it.Pointer(), *(--it - n));
-		}
+	Iter insert(const Iter position, std::initializer_list<T> il)
+	{
+		return insert(position, il.begin(), il.end());
+	}
 
-		for (; it != begin() + lrange; it--)
-		{
-			alloc.destroy(it.Pointer());
-			alloc.construct(it.Pointer(), val);
-		}
-
-		return begin() + lrange;//nepravilmno
+	template <class It>
+	Iter insert(const Iter position, It first, It last)
+	{
+		return Insert(val<is_iter<It>::value>(), position, first, last);
 	}
 
 	Iter erase(const Iter position)
@@ -251,23 +252,41 @@ public:
 
 	Iter erase(const Iter first, const Iter last)
 	{
-		ptrdiff_t range = first - begin();
 		ptrdiff_t count = last - first;
+        ptrdiff_t s = end() - first - count;
 
-		Iter it = begin() + range;
-		Iter it1 = end();
-		for (size_t i = 0; i < count; i++)
+		Iter it = first;
+		for (size_t i = 0; i < s; i++)
 		{
-			alloc.destroy(it.Pointer());
-			alloc.construct(it.Pointer(), *(--it1 - count));
+			alloc.destroy(it.pointer);
+			alloc.construct(it.pointer, *(it + count));
+			it++;
 		}
 		resize(size() - count);
-		return begin() + range;
+		return first;
 	}
+    
+    void swap(Vec& v)
+    {
+		T* tfirst = v.first;
+		T* tlast = v.last;
+		T* tmlast = v.mlast;
+		Alloc talloc = v.alloc;
 
+		v.first = first;
+		v.last = last;
+		v.mlast = mlast;
+		v.alloc = alloc;
+
+		first = tfirst;
+		last = tlast;
+		mlast = tmlast;
+		alloc = talloc;
+    }
+    
 	void clear()
 	{
-		resize(0); // ili relocated ili erase po iteratory
+		resize(0);
 	}
 	
 	Iter begin()
@@ -306,7 +325,12 @@ public:
 	}
 
 private:
-	void Construct(size_t size, const T& val)
+    T* first;
+    T* last = first;
+    T* mlast = first;
+    Alloc alloc;
+     
+	void Create(size_t size, const T& val)
 	{
 		Allocate(size);
 		for (size_t i = 0; i < size; i++)
@@ -325,10 +349,10 @@ private:
 	void SwapElement(const Iter& src1, const Iter& src2) 
 	{
 		T tmp = *src1;
-		alloc.destroy(src1.Pointer());
-		alloc.construct(src1.Pointer(), *src2);
-		alloc.destroy(src2.Pointer());
-		alloc.construct(src2.Pointer(), tmp);
+		alloc.destroy(src1.pointer);
+		alloc.construct(src1.pointer, *src2);
+		alloc.destroy(src2.pointer);
+		alloc.construct(src2.pointer, tmp);
 	}
 
 	void Reallocate(size_t size)
@@ -346,9 +370,82 @@ private:
 			alloc.deallocate(tfirst, size);
 	}
 
-	T* first;
-	T* last = first;
-	T* mlast = first;
-	Alloc alloc;
-	
+	template<typename E>
+	struct is_iter
+	{
+	private:
+		static int check(...);
+		static Iter check(T*);
+		static Iter check(Iter);
+	public:
+		static const bool value = std::is_same<int, decltype(check(E()))>::value;
+	};
+
+	template<bool E>
+	struct val {};
+
+	template<typename E>
+	void Construct(val<true>, E first, E last)
+	{
+		for (E it = first; it != last; it++)
+			push_back(*it);
+	}
+
+	template<typename E>
+	void Construct(val<false>, E size, E val)
+	{
+		Create(size, val);
+	}
+
+	Iter Move(size_t n, size_t range)
+	{
+		if (size() + n > capacity())
+		{
+			size_t tsize = size();
+			while (tsize < size() + n)
+				tsize *= 2;
+			Reallocate(tsize);
+		}
+		resize(size() + n);
+
+		Iter it = end();
+		for (int i = 0; i <= range; i++)
+		{
+			alloc.destroy(it.pointer);
+			alloc.construct(it.pointer, *(--it - n));
+		}
+		return it;
+	}
+
+	template<typename E>
+	Iter Insert(val<true>, const Iter position, E first, E last)
+	{
+		ptrdiff_t rrange = end() - position;
+		ptrdiff_t lrange = position - begin() - 1;
+		Iter it = Move(last - first, rrange);
+
+		for (; it != begin() + lrange; it--)
+		{
+			alloc.destroy(it.pointer);
+			alloc.construct(it.pointer, *(--last));
+		}
+
+		return begin() + lrange;
+	}
+
+	template<typename E>
+	Iter Insert(val<false>, const Iter position, E n, E val)
+	{
+		ptrdiff_t rrange = end() - position;
+		ptrdiff_t lrange = position - begin() - 1;
+		Iter it = Move(n, rrange);
+
+		for (; it != begin() + lrange; it--)
+		{
+			alloc.destroy(it.pointer);
+			alloc.construct(it.pointer, val);
+		}
+
+		return begin() + lrange;
+	}
 };

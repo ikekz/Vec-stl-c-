@@ -4,6 +4,8 @@ template<typename T>
 class Iter
 {
 public:
+	T* pointer;
+
 	Iter& operator++()
 	{	
 		++pointer;
@@ -42,23 +44,16 @@ public:
 
 	ptrdiff_t operator-(const Iter& src) const
 	{
-		return pointer - src.Pointer();
+		return pointer - src.pointer;
 	}
 
 	T& operator*() const
 	{	
-		T* tmp = pointer; //pochekat'
+		T* tmp = pointer; 
 		return *tmp;
 	}
 
-	T* Pointer() const
-	{
-		return pointer;
-	}
-
 	Iter(T* p) : pointer(p) {};
-private:
-	T* pointer;
 };
 
 template<typename T> const
@@ -67,34 +62,28 @@ Iter<T> operator+(size_t n, const Iter<T>& src)
 	return src + n;
 }
 
-//template<typename T> const
-//Iter<T> operator-(const Iter<T>& src1, const Iter<T>& src2)
-//{	// return difference of reverse_iterators
-//	return (src1.Pointer() - src2.Pointer());
-//}
-
 template<typename T> const
 bool operator==(const Iter<T>& src1, const Iter<T>& src2)
 {
-	return src1.Pointer() == src2.Pointer();
+	return src1.pointer == src2.pointer;
 }
 
 template<typename T> const
 bool operator!=(const Iter<T>& src1, const Iter<T>& src2)
 {
-	return !(src1.Pointer() == src2.Pointer());
+	return !(src1.pointer == src2.pointer);
 }
 
 template<typename T> const
 bool operator<(const Iter<T>& src1, const Iter<T>& src2)
 {
-	return src1.Pointer() < src2.Pointer();
+	return src1.pointer < src2.pointer;
 }
 
 template<typename T> const
 bool operator>(const Iter<T>& src1, const Iter<T>& src2)
 {
-	return src1.Pointer() > src2.Pointer();
+	return src1.pointer > src2.pointer;
 }
 
 template<typename T> const

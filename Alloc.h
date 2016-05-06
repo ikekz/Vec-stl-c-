@@ -4,19 +4,19 @@ template <typename T>
 class Alloc
 {
 public:
-	T* allocate(size_t count)
+    T* allocate(size_t count)
 	{
 		return (T*)(operator new(sizeof(T) * count));
 	}
 
-	void deallocate(T* p, size_t n)
+    void deallocate(T* p, size_t n)
 	{
 		operator delete(p);
 	}
 
-	size_t max_size() const
+    size_t max_size() const
 	{
-		return SIZE_MAX / sizeof(T);
+        return (size_t)(-1) / sizeof(T);
 	}
 
 	void destroy(T* p)

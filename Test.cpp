@@ -4,20 +4,23 @@
 #include "Iter.h"
 #include <gtest/gtest.h>
 #include <vector>
+#include <set>
 
 using namespace std;
 
 class TestIter : public ::testing::Test
 {
 public:
-	Vec<int> v1;
-	vector<int> v2;
+	Vec<string> v1;
+	vector<string> v2;
 	void SetUp(int size)
 	{
 		for (int i = 1; i <= size; i++)
 		{
-			v1.push_back(i);
-			v2.push_back(i);
+			char tmp1 = rand();
+			string tmp = (char*)tmp1;
+			v1.push_back(tmp);
+			v2.push_back(tmp);
 		}
 	}
 };
@@ -162,10 +165,10 @@ TEST_F(TestIter, comparisons)
 class TestVec : public ::testing::Test 
 {
 protected:
-	Vec<int> v1;
-	vector<int> v2;
-	//const Vec<int> cv1 = const Vec<int>(10, 3);
-	//const vector<int> cv2;
+	Vec<string> v1;
+	vector<string> v2;
+	const Vec<string> cv1 = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+	const vector<string> cv2 = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
 	void SetUp(int size)
 	{
@@ -173,12 +176,14 @@ protected:
 		v2.reserve(size);
 		for (int i = 1; i <= size; i++)
 		{
-			v1.push_back(i);
-			v2.push_back(i);
+			char tmp1 = rand();
+			string tmp = (char*)tmp1;
+			v1.push_back(tmp);
+			v2.push_back(tmp);
 		}
 	}
 
-	void Compare(Vec<int> v1, vector<int> v2)
+	void Compare(Vec<string> v1, vector<string> v2)
 	{
 		ASSERT_EQ(v1.size(), v2.size());
 		for (int i = 0; i < v1.size(); i++)
@@ -188,26 +193,40 @@ protected:
 
 TEST_F(TestVec, default_constructor)
 {
-	Compare(Vec<int>(), vector<int>());
-	Compare(Vec<int>(Alloc<int>()), vector<int>(allocator<int>()));
+	Compare(Vec<string>(), vector<string>());
+	Compare(Vec<string>(Alloc<string>()), vector<string>(allocator<string>()));
 }
 
 TEST_F(TestVec, fill_constructor)
 {
-	Compare(Vec<int>(10), vector<int>(10));
-	Compare(Vec<int>(3, 4), vector<int>(3, 4));
+	Compare(Vec<string>(10), vector<string>(10));
+	Compare(Vec<string>(3, "4"), vector<string>(3, "4"));
 }
 
 TEST_F(TestVec, copy_constructor)
 {
-	Compare(Vec<int>(Vec<int>(10)), vector<int>(vector<int>(10)));
+	Compare(Vec<string>(Vec<string>(10)), vector<string>(vector<string>(10)));
+}
+
+TEST_F(TestVec, range_constructor)
+{
+	vector<string> a2 = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+	Vec<string> a1(a2.begin(), a2.end());
+	Compare(a1, a2);
+}
+
+TEST_F(TestVec, initializer_list_constructor)
+{
+	Vec<string> a1 = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+	vector<string> a2 = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+	Compare(a1, a2);
 }
 
 TEST_F(TestVec, basic_assignment)
 {
 	SetUp(10);
-	v1 = Vec<int>(25, 3);
-	v2 = vector<int>(25, 3);
+	v1 = Vec<string>(25, "3");
+	v2 = vector<string>(25, "3");
 	Compare(v1, v2);
 }
 
@@ -216,6 +235,8 @@ TEST_F(TestVec, begin)
 	SetUp(10);
 	ASSERT_EQ(*v1.begin(), v1[0]);
 	ASSERT_EQ(*v1.begin(), *v2.begin());
+	ASSERT_EQ(*cv1.begin(), cv1[0]);
+	ASSERT_EQ(*cv1.begin(), *cv2.begin());
 }
 
 TEST_F(TestVec, end)
@@ -223,6 +244,8 @@ TEST_F(TestVec, end)
 	SetUp(10);
 	ASSERT_EQ(*(v1.end() - 1), v1[9]);
 	ASSERT_EQ(*(v1.end() - 1), *(v2.end() - 1));
+	ASSERT_EQ(*(cv1.end() - 1), cv1[9]);
+	ASSERT_EQ(*(cv1.end() - 1), *(cv2.end() - 1));
 }
 
 TEST_F(TestVec, cbegin)
@@ -261,11 +284,11 @@ TEST_F(TestVec, resize)
 	v1.resize(5);
 	v2.resize(5);
 	Compare(v1, v2);
-	v1.resize(11, 3);
-	v2.resize(11, 3);
+	v1.resize(11, "3");
+	v2.resize(11, "3");
 	Compare(v1, v2);
-	v1.resize(2, 2);
-	v2.resize(2, 2);
+	v1.resize(2, "2");
+	v2.resize(2, "2");
 	Compare(v1, v2);
 }
 
@@ -273,7 +296,7 @@ TEST_F(TestVec, capacity)
 {
 	SetUp(10);
 	ASSERT_EQ(v1.capacity(), 10);
-	v1.push_back(1);
+	v1.push_back("1");
 	ASSERT_EQ(v1.capacity(), 20);
 }
 //EXPECT_THROW();
@@ -318,36 +341,65 @@ TEST_F(TestVec, at)
 {
 	SetUp(10);
 	ASSERT_EQ(v1.at(4), v2.at(4));
+	ASSERT_EQ(cv1.at(4), cv2.at(4));
 }
 
 TEST_F(TestVec, front)
 {
 	SetUp(10);
 	ASSERT_EQ(v1.front(), v2.front());
+	ASSERT_EQ(cv1.front(), cv2.front());
 }
 
 TEST_F(TestVec, back)
 {
 	SetUp(10);
 	ASSERT_EQ(v1.back(), v2.back());
+	ASSERT_EQ(cv1.back(), cv2.back());
 }
 
 TEST_F(TestVec, data)
 {
 	SetUp(10);
 	ASSERT_EQ(v1.data() + 3, v1.data() + 3);
+	ASSERT_EQ(cv1.data() + 3, cv1.data() + 3);
+}
+
+TEST_F(TestVec, range_assign)
+{
+	SetUp(10);
+	vector<string> t = { "11", "22", "33", "44", "55", "66", "77" };
+	v1.assign(t.begin(), t.end());
+	v2.assign(t.begin(), t.end());
+	Compare(v1, v2);
+}
+
+TEST_F(TestVec, fill_assign)
+{
+	SetUp(10);
+	v1.assign(5, "7");
+	v2.assign(5, "7");
+	Compare(v1, v2);
+}
+
+TEST_F(TestVec, initializer_list_assign)
+{
+	SetUp(10);
+	v1.assign({ "11", "22", "33", "44", "55", "66", "77" });
+	v2.assign({ "11", "22", "33", "44", "55", "66", "77" });
+	Compare(v1, v2);
 }
 
 TEST_F(TestVec, push_back)
 {
 	SetUp(10);
-	v1.push_back(66);
-	v2.push_back(66);
+	v1.push_back("66");
+	v2.push_back("66");
 	Compare(v1, v2);
 	v1.resize(0);
 	v2.resize(0);
-	v1.push_back(66);
-	v2.push_back(66);
+	v1.push_back("66");
+	v2.push_back("66");
 	Compare(v1, v2);
 }
 
@@ -362,20 +414,37 @@ TEST_F(TestVec, pop_back)
 TEST_F(TestVec, insert)
 {
 	SetUp(10);
-	v1.insert(v1.begin() + 4, 88);
-	v2.insert(v2.begin() + 4, 88);
+	v1.insert(v1.begin() + 4, "88");
+	v2.insert(v2.begin() + 4, "88");
 	Compare(v1, v2);
 	v1.resize(0);
 	v2.resize(0);
-	v1.insert(v1.begin(), 88);
-	v2.insert(v2.begin(), 88);
+	v1.insert(v1.begin(), "88");
+	v2.insert(v2.begin(), "88");
 	Compare(v1, v2);
-	//ASSERT_EQ(*(v1.insert(v1.begin(), 16)), *(v2.insert(v2.begin(), 16)));
-	v1.insert(v1.begin() + 1, 10, 17);
-	v2.insert(v2.begin() + 1, 10, 17);
+	//ASSERT_EQ(v1.insert(v1.begin() + 1, "16") - v1.begin(), v2.insert(v2.begin() + 1, "16") - v2.begin());
+	v1.insert(v1.begin() + 1, 10, "17");
+	v2.insert(v2.begin() + 1, 10, "17");
 	Compare(v1, v2);
-	v1.insert(v1.end() - 1, 1000, 52);
-	v2.insert(v2.end() - 1, 1000, 52);
+	//v2.insert(v2.begin() + 2, 7, 5);
+	//cout << v1.size() << " " << v2.size();
+	//ptrdiff_t a = v2.insert(v2.begin() + 2, 7, 5) - v2.end() + 5;
+	//cout << v1.size() << " " << v2.size();
+	//ASSERT_EQ(v1.insert(v1.begin() + 2, 7, 5) - v1.begin(), v2.insert(v2.begin() + 2, 7, 5) - v2.begin());
+	v1.insert(v1.end() - 1, 10, "52");
+	v2.insert(v2.end() - 1, 10, "52");
+	Compare(v1, v2);
+	vector<string> t = { "-1", "-2", "-3" ,"-4", "-5", "-6" };
+	v1.insert(v1.begin() + 2, t.begin() + 1, t.end() - 2);
+	v2.insert(v2.begin() + 2, t.begin() + 1, t.end() - 2);
+	Compare(v1, v2);
+	v1.insert(v1.begin() + 6, { "8", "90", "86", "13" });
+	v2.insert(v2.begin() + 6, { "8", "90", "86", "13" });
+	//for (string i = 0; i < v1.size(); i++)
+	//	cout << v1[i] << " ";
+	//cout << endl;
+	//for (string i = 0; i < v2.size(); i++)
+	//	cout << v2[i] << " ";
 	Compare(v1, v2);
 	//ASSERT_EQ(*(v1.insert(v1.begin() + 18, 7)), *(v2.insert(v2.begin() + 18, 7)));
 }
@@ -391,130 +460,27 @@ TEST_F(TestVec, erase)
 	Compare(v1, v2);
 }
 
+TEST_F(TestVec, swap)
+{
+	Vec<string> a1 = { "1", "2", "3"};
+	Vec<string> a2 = {"5", "6", "7", "8", "9", "10"};
+	Vec<string> ta1 = a1;
+	Vec<string> ta2 = a2;
+	a1.swap(a2);
+	ASSERT_EQ(a1.size(), ta2.size());
+	ASSERT_EQ(a1.capacity(), ta2.capacity());
+	for (int i = 0; i < a1.size(); i++)
+		ASSERT_EQ(a1[i], ta2[i]);
+
+	ASSERT_EQ(a2.size(), ta1.size());
+	ASSERT_EQ(a2.capacity(), ta1.capacity());
+	for (int i = 0; i < a2.size(); i++)
+		ASSERT_EQ(a2[i], ta1[i]);
+}
+
 int main(int argc, char* argv[])
 {	
-	{
-		Vec<int> v1;
-		v1.insert(v1.begin(), 88);
-		v1.insert(v1.begin() + 1, 2, 17);
-		v1.insert(v1.begin() + 2, 2, 6);
-		v1.insert(v1.begin() + 3, 2, 9);
-		for (int i = 0; i < v1.size(); i++)
-			cout << v1[i] << " ";
-		cout << endl;
-		v1.erase(v1.begin() + 2, v1.begin() + 3);
-		for (int i = 0; i < v1.size(); i++)
-			cout << v1[i] << " ";
-		cout << endl;
-		cout << v1.size() << endl;
-	}
-	/*{
-		vector<int> a;
-		for (int i = 1; i < 11; i++)
-			a.push_back(i);
-		a.insert(a.begin() + 2, 8, 5);
-		cout << a[0] << endl;
-		for (int i = 0; i < a.size(); i++)
-			cout << a[i] << " ";
-		cout << endl;
-		{
-			Vec<int> a;
-			for (int i = 1; i < 11; i++)
-				a.push_back(i);
-			a.insert(a.begin(), 8, 5);
-			cout << a[0] << endl;
-			for (int i = 0; i < a.size(); i++)
-				cout << a[i] << " ";
-			cout << endl;
-		}
-		//Vec<int> b;
-		//b.insert(b.begin(), 2);
-		//cout << b[0] << endl;
-	}
-	/*{
-		//vector<int> v("sss", "sssss");
-		////cout << v.size();
-		Vec<int> d(10, 10);
-	}
-	{
-		allocator<int> gggg;
-		Alloc<string> as;
-		Vec<string> d1;
-		//Vec<string> d2(as);
-		Vec<string> f1(10);
-		Vec<string> f2(15, "55");
-		Vec<string> e(f2);
-
-		//cout << f2.size() << " " << f2.capacity() << endl;
-		//cout << e.size() << " " << e.capacity() << endl;
-		f2[5] = "qqq";
-		//cout << f2[5] << " " << e[5] << endl;
-		e.push_back("aa");
-		//cout << f2.size() << " " << f2.capacity() << endl;
-		//cout << e.size() << " " << e.capacity() << endl;
-
-		f2.shrink_to_fit();
-		//cout << f1.max_size() << " " << f2.capacity() << endl;
-		f2.push_back("qwer");
-		f2.push_back("rewq");
-		//cout << f2.back() << " " << f2.front() << endl;;
-		//f2.clear();
-		//f2.resize(0);
-		//cout << f2[0] << endl;
-		//cout << f2.size() << " " << f2.capacity() << endl;
-		f2.pop_back();
-		f2.resize(10, "hh");
-		f2.resize(20);
-		f2.shrink_to_fit();
-		//cout << f2.size() << " " << f2.at(15) << " " << f2.capacity() << endl;
-		////cout << f1.size() << " " << f1[8] << " " << f1.capacity() << endl;
-		d1.reserve(14);
-		d1.shrink_to_fit();
-		//cout << d1.size() << " " << d1.capacity() << " " << endl;
-	}
-	//cout << endl;
-	{
-		//vector<string> b("222", "555");
-		vector<string> a(15);
-		vector<string> b(10, "h"); // check on max_size in my Vec
-		//cout << b.max_size() << endl;
-		//b = a;
-		//a.resize(0);
-		a.reserve(5);
-		string e = "qwer";
-		a.push_back(e);
-		e = "arnold";
-		a.resize(18);
-		a.shrink_to_fit();
-		//cout << a.size() << " " << a[8] << " " << a.capacity() << endl;
-	}
-	//cout << endl;
-	{
-		Vec<int> v;
-		vector<int> vec;
-		for (int i = 1; i < 10; i++)
-			vec.push_back(i);
-		auto a = vec.begin();
-		//cout << a[3] << endl;
-		//cout << *(a++) << " " << *(a++) << " " << *(a) << " " << *(++a) << " " << *a << endl;
-		++a;
-		a++;
-		//cout << *a << endl;
-		for (int i = 1; i < 10; i++)
-			v.push_back(i);
-		
-		auto it = v.begin();
-		//cout << v[0] << v[1] << v[2] << v[3] << endl;
-		//cout << *(it++) << " " << *(it++) << " " << *(it) << " " << *(++it) << " " << *it << endl;
-		++it;
-		it++;
-		//cout << *it << endl;
-	}
-	vector<int> a(10);
-	cout << a.size() << endl;
-	a.clear();
-	cout << a.size() << " " << a.capacity() << endl;*/
 	::testing::InitGoogleTest(&argc, argv);
-	//return RUN_ALL_TESTS();
+	return RUN_ALL_TESTS();
 	return 0;
 }
